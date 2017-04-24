@@ -1,0 +1,39 @@
+---
+title: "R-club-Apr-26"
+output: 
+  html_document: 
+    keep_md: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+```
+
+## 3.2.4
+
+```{r 3.2.4 Exercises, echo = FALSE}
+ggplot(data = mpg)
+paste("Rows: ", nrow(mtcars))
+paste("Columns: ", ncol(mtcars))
+print("drv describes the 'drive'")
+ggplot(mpg) + geom_point(aes(hwy, cyl))
+ggplot(mpg) + geom_point(aes(class, drv))
+```
+
+
+1. The color part should have been outside of the aes wrapper.
+2. Categorical variables: manufacturer, model, trans, drv, fl, class
+      Continuous variables: displ, year, cyl, cty, hwy
+      Generally, continuous variables will have a class of double / int, and categorical ones will be characters
+3. Continuous variables can't be mapped to shape. For color or size, they will be mapped to a gradient depending on their value. Categorical variables will be ordered alphabetically and mapped to the same gradients, but will probably be meaningless/arbitrary. For shape, the first 6 variables will be assigned shapes. 
+4. Both aesthetics will be applied.
+5. Stroke is like a paint stroke, sort of density visualizer
+6. It will map to the output of whatever you put
+
+1. It will make a subplot for every possible value.
+2. The empty cells mean there were no data points with that combination of the two faceted variables
+3. '. ~ var' means do not facet by row. 'var ~ .' means do not facet by column.
+4. Advantages: Possibly easier to see trends for an individual subgroup. Color might be better if you have a large dataset and want to compare everything side by side.
+5. Facet wrap controls the visual output of the panels on your screen. Facet grid does not have nrow/ncol because those are determined by the variables that you are faceting by.
+6. Our screens are usually in 'landscape' mode, so there is more room to display more columns.
