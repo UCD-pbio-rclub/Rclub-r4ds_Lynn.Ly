@@ -1,0 +1,96 @@
+---
+title: "May 10"
+output:
+  pdf_document: default
+  html_document:
+    keep_md: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(nycflights13)
+library(tidyverse)
+```
+
+# Data transformation
+
+### 5.2.4 Exercises
+
+```{r 5.2.4 Exercises}
+one <- filter(flights, arr_delay > 120)
+two <- filter(flights, dest %in% c("IAH", "HOU"))
+three <- filter(flights, carrier %in% c("UA", "AA", "DL"))
+four <- filter(flights, month %in% c(7, 8, 9))
+five <- filter(flights, arr_delay > 120 & dep_delay <= 0)
+six <- filter(flights, dep_delay > 60 & arr_delay < 30)
+seven <- filter(flights, dep_time > 0 & dep_time < 360)
+sevenb <- filter(flights, between(dep_time, 0, 360))
+```
+
+between is a shortcut for x >= left and x >= right. Usage: between(x, left, right)
+
+```{r}
+canceled <- filter(flights, is.na(dep_time))
+```
+
+Rows missing dep_time are also missing delays, arrival times. They probably are canceled flights
+
+Anything ^0 is one. |TRUE is always true not matter what the other clauses are. &FALSE is always false. 
+
+### 5.3.1
+
+```{r}
+arrange(flights, desc(is.na(dep_time)))
+arrange(flights, dep_delay) #earliest. For most delayed, put desc(dep_delay)
+arrange(flights, air_time)
+arrange(flights, distance) #shortest. For longest, put desc(distance)
+```
+
+### 5.3.1
+
+```{r}
+#1
+select(flights, dep_time, dep_delay, arr_time, arr_delay)
+select(flights, starts_with("dep"), starts_with("arr"))
+select(flights, matches("^(dep|arr)_(time|delay)"))
+
+#2
+select(flights, dep_time, dep_time, dep_delay) #includes repeated variables only once
+
+#3
+vars <- c("year", "month", "day", "dep_delay", "arr_delay")
+select(flights, one_of(vars)) # behaves like %in%, but for select
+
+#4
+select(flights, contains("TIME")) #You can include ignore.case=FALSE
+```
+
+### 5.5.2 Exercises
+
+```{r}
+flights_sml <- select(flights, year:day, ends_with("delay"), distance, air_time)
+#1 
+transmute(flights, dep_time, minutes_since_midnight = (dep_time %/% 100) * 60 + dep_time %% 100)
+
+#2
+transmute(flights, air_time, arr_time - dep_time) # The numbers are different. Different time zones?
+transmute(flights, air_time2 = arr_time - dep_time, diff = air_time2 - air_time)
+
+#3
+transmute(flights, dep_time, sched_dep_time, dep_delay, expect = dep_time - sched_dep_time)
+#We need to convert into minutes, rather than the easily visible time version
+
+
+#4
+test <- transmute(flights, dep_delay, dep_delay_ranked = min_rank(-dep_delay))
+arrange(filter(test, dep_delay_ranked < 10), dep_delay)
+
+
+#5
+1:3 + 1:10 #It makes 1:3 repeat until there are 10 units, then adds the two vectors
+
+#6
+#R includes all of them that I know of (like cos, sin, tan etc)
+
+```
+
