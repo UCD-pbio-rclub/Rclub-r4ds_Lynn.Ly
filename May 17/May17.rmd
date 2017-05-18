@@ -1,0 +1,118 @@
+---
+title: "May 17"
+output: 
+  html_document: 
+    keep_md: yes
+---
+
+5.6.7 Exercises
+
+```{r}
+library(nycflights13)
+library(tidyverse)
+
+not_cancelled <- flights %>% 
+  filter(!is.na(dep_delay), !is.na(arr_delay))
+
+not_cancelled %>% 
+  group_by(year, month, day) %>% 
+  summarise(mean = mean(dep_delay))
+```
+
+2. Come up with another approach that will give you the same output as not_cancelled %>% count(dest) and not_cancelled %>% count(tailnum, wt = distance) (without using count()).
+```{r 5.6.7 2}
+not_cancelled %>% group_by(dest) %>% summarise(n())
+not_cancelled %>% group_by(tailnum) %>% summarise(distance = sum(distance))
+```
+
+3. Our definition of cancelled flights (is.na(dep_delay) | is.na(arr_delay) ) is slightly suboptimal. Why? Which is the most important column?
+```{r} 
+flights %>% summarise(sum(is.na(dep_delay)))
+flights %>% summarise(sum(is.na(arr_delay)))
+```
+There are more NAs in arr_delay than dep_delay. Why? I don't know
+It seems like dep_delay is more important because a cancelled flight will never take off...r ight?
+
+4. Look at the number of cancelled flights per day. Is there a pattern? Is the proportion of cancelled flights related to the average delay?
+
+```{r}
+cancelled <- flights %>% mutate(cancelled = (is.na(arr_delay) | is.na(dep_delay))) %>%
+  group_by(year, month, day) %>% summarise(cancelled_percent = mean(cancelled),
+                                           avg_delay = mean(dep_delay, na.rm=TRUE))
+cancelled
+
+ggplot(cancelled, aes(avg_delay, cancelled_percent)) + geom_point()
+```
+
+
+5. Which carrier has the worst delays? Challenge: can you disentangle the effects of bad airports vs. bad carriers? Why/why not? (Hint: think about flights %>% group_by(carrier, dest) %>% summarise(n()))
+```{r}
+flights %>% group_by(carrier) %>% summarise(delay = mean(dep_delay, na.rm = TRUE)) %>% arrange(desc(delay))
+#F9 is the worst carrier
+
+# Incomplete Challenge: 
+# Number of flights to each destination by each carrier
+(by_dest <- flights %>% group_by(carrier, dest) %>% summarise(n()))
+
+flights %>% group_by(carrier, dest) %>% summarise(delay=mean(dep_delay, na.rm=TRUE)) %>% summarise(mean(delay, na.rm=TRUE))
+```
+
+6. What does the sort argument to count() do. When might you use it?
+```{r}
+not_cancelled %>% count(dest, sort=T)
+```
+It sorts by count. Seems like it could have been useful earlier when we used arrange
+
+# 5.6.1 Exercises
+1. The operations will apply to groups, not the whole data frame
+2. Which plane (tailnum) has the worst on-time record?
+```{r}
+flights %>% group_by(tailnum) %>% summarise(mean_delay = mean(arr_delay, na.rm=TRUE)) %>% arrange(desc(mean_delay))
+#I hate flying on N844MH
+```
+3. What time of day should you fly if you want to avoid delays as much as possible? 
+```{r}
+flights %>% group_by(hour) %>% summarise(mean_delay = mean(arr_delay, na.rm=TRUE)) %>% arrange(mean_delay)
+#7am wakin up in the morning
+```
+4. For each destination, compute the total minutes of delay. For each flight compute the proportion of the total delay for its destination. 
+```{r}
+not_cancelled %>% group_by(dest) %>% mutate(total_delay = sum(arr_delay), delay_percent = arr_delay / total_delay)
+```
+
+5. Use lag() to explore how the delay of a flight is related to the delay of the immediately preceeding flight.
+```{r}
+not_cancelled %>% mutate(lag_delay = lag(dep_delay)) %>%
+  ggplot(aes(dep_delay, lag_delay)) + geom_point()
+```
+6. Look at each destination. Can you find flights that are suspiciously fast? (i.e. flights that represent a potential data entry error). Compute the air time a flight relative to the shortest flight to that destination. Which flights were most delayed in the air?
+
+```{r}
+not_cancelled %>% 
+  group_by(dest) %>% 
+  mutate(median = median(air_time), speed=(air_time - median), normalized=speed/median) %>% 
+  arrange(normalized) %>%
+  select(dest, median, normalized, air_time)
+
+# Doesn't this not take into account origin? ..isn't that important?
+```
+
+
+7. Find all destinations that are flown by at least two carriers. Use that information to rank the carriers.
+rank the carriers? what?
+
+```{r}
+#Counts rows, or number of flights per carrier per destination
+flights %>% group_by(dest, carrier) %>% count(carrier)
+
+
+#Counts rows, or number of destinations per carrier
+flights %>% group_by(dest, carrier) %>% count(carrier) %>% group_by(carrier) %>% count()
+
+```
+
+8. For each plane, count the number of flights before the first delay of greater than 1 hour.
+```{r}
+flights %>% group_by(tailnum) %>% mutate(delayed = dep_delay > 60) %>% mutate(beforeflights = cumsum(delayed)) %>% filter(beforeflights < 1) %>% count()
+```
+
