@@ -10,6 +10,7 @@ library(tidyverse)
 library(nycflights13)
 library(lvplot)
 library(ggstance)
+library(ggbeeswarm)
 ```
 
 ## 7.2.4 Exercises
@@ -73,6 +74,13 @@ ggplot(diamonds) + geom_lv(aes(cut, price))
 ```
 4. lv boxplots are supposed to display more information about tails and give "quartiles" but for more than just 4 divisions
 
-5. Geom_violin gives more data about the distribution of data
+5. Geom_violin gives more data about the distribution of data. Freqpoly lets you see overlaps easily. 
+
+6. geom_quasirandom offsets points based on density, like a violin plot and a scatterplot
+beeswarm does not work for me
+```{r}
+ggplot(diamonds, aes(x=price, y=cut)) + geom_quasirandom()
+#ggplot(diamonds, aes(x=price, y=cut)) + geom_beeswarm()
+```
 
 
