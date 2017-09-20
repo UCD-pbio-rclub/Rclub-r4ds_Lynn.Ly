@@ -1,0 +1,206 @@
+---
+title: "June 21"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(nycflights13)
+```
+
+Please finish chapter 12 (tidy data; sections 12.5 - 12.7) and get started on chapter 13 (relational data, sections 13.1 - 13.2).
+
+12.5.1 Exercises
+1. Compare and contrast the `fill` arguments to `spread()` and `gather()`
+For spread, fill is the designation for what all NAs should be replaced with. For gather, this comes from the dataset and can be many different designations at once.
+
+2. What does the direction argument to `fill()` do?
+Tells you if you want NA to be filled in with the previous datum (default) or next datum
+
+```{r}
+who4 <- who %>%
+  gather(code, value, new_sp_m014:newrel_f65, na.rm = TRUE) %>% 
+  mutate(code = stringr::str_replace(code, "newrel", "new_rel")) %>%
+  separate(code, c("new", "var", "sexage")) %>% 
+  select(-new, -iso2, -iso3) %>% 
+  separate(sexage, c("sex", "age"), sep = 1)
+```
+
+12.6.1 Exercises
+1. In this case study I set na.rm = TRUE just to make it easier to check that we had the correct values. Is this reasonable? Think about how missing values are represented in this dataset. Are there implicit missing values? What’s the difference between an NA and zero?
+NA and zero would be the same here: an absense of any cases of that type in that country during that year.
+
+2. What happens if you neglect the mutate() step? (mutate(key = stringr::str_replace(key, "newrel", "new_rel")))
+You are unable to split newrel at the separate by "_" step
+
+3. I claimed that iso2 and iso3 were redundant with country. Confirm this claim.
+```{r}
+who2 %>% 
+  select(country, iso2, iso3) %>%
+  distinct() %>%
+  group_by(country)
+```
+
+4. For each country, year, and sex compute the total number of cases of TB. Make an informative visualisation of the data.
+```{r}
+who5 %>%
+  group_by(country, year, sex) %>%
+  summarise(cases = sum(cases)) %>%
+  unite(newcol, country, sex, remove = FALSE) %>%
+  filter(year > 1990) %>%
+  ggplot(aes(year, cases, group=newcol, color = sex)) +
+           geom_line()
+```
+
+13.3.1 Exercises
+1. Add a surrogate key to flights
+```{r}
+flights %>% 
+  mutate(surrogate = row_number())
+```
+
+```{r}
+flights2 <- flights %>% 
+  select(year:day, hour, origin, dest, tailnum, carrier)
+flights2
+flights2 %>%
+  select(-origin, -dest) %>% 
+  left_join(airlines, by = "carrier")
+
+```
+
+13.4.6 Exercises
+1. Compute the average delay by destination, then join on the airports data frame so you can show the spatial distribution of delays. 
+
+```{r}
+delays <- flights %>%
+  group_by(dest) %>%
+  summarise(delay = mean(dep_delay, na.rm = TRUE))
+
+airports %>%
+  inner_join(delays, c("faa" = "dest")) %>%
+  ggplot(aes(lon, lat, size = delay, color = delay)) +
+    borders("state") +
+    geom_point() +
+    coord_quickmap()
+```
+2. Add the location of the origin and destination (i.e. the lat and lon) to flights.
+```{r}
+flights %>%
+  left_join(airports, by = c(dest = "faa")) %>%
+  left_join(airports, by = c(origin = "faa")) %>%
+  head()
+```
+
+3. Is there a relationship between the age of a plane and its delays?
+```{r}
+plane_ages <- planes %>% 
+  mutate(age = 2013 - year) %>%
+  select(tailnum, age)
+
+flights %>%
+  inner_join(plane_ages, by = "tailnum") %>%
+  group_by(age) %>%
+  summarise(delay = mean(dep_delay, na.rm = TRUE)) %>%
+  ggplot(aes(x = age, y = delay)) + 
+  geom_point()
+  
+
+```
+4. What weather conditions make it more likely to see a delay?
+```{r}
+flight_weather <-
+  flights %>%
+  inner_join(weather, by = c("origin" = "origin",
+                            "year" = "year",
+                            "month" = "month",
+                            "day" = "day",
+                            "hour" = "hour"))
+
+flight_weather %>%
+  group_by(precip) %>%
+  summarise(delay = mean(dep_delay, na.rm = TRUE)) %>%
+  ggplot(aes(x = precip, y = delay)) +
+  geom_point()
+```
+
+
+5. What happened on June 13 2013? Display the spatial pattern of delays, and then use Google to cross-reference with the weather.
+
+```{r}
+flights %>%
+  filter(year == 2013, month == 6, day == 13) %>%
+  group_by(dest) %>%
+  summarise(delay = mean(arr_delay, na.rm = TRUE)) %>%
+  inner_join(airports, by = c("dest" = "faa")) %>%
+  ggplot(aes(y = lat, x = lon, size = delay, colour = delay)) +
+  borders("state") +
+  geom_point() +
+  coord_quickmap()
+```
+# 13.5.1 Exercises
+
+1. What does it mean for a flight to have a missing tailnum? What do the tail numbers that don’t have a matching record in planes have in common? (Hint: one variable explains ~90% of the problems.)
+```{r}
+flights %>% 
+  filter(is.na(tailnum))
+
+flights %>%
+  anti_join(planes, by="tailnum") %>%
+  count(carrier)
+
+```
+Flights that did not depart are missing their tailnums. Also, AA and MQ never say their tailnums.
+
+2. Filter flights to only show flights with planes that have flown at least 100 flights.
+```{r}
+oldplanes <- flights %>%
+  count(tailnum) %>%
+  filter(n > 100)
+
+flights %>%
+  semi_join(oldplanes, by="tailnum")
+```
+
+
+3. Combine fueleconomy::vehicles and fueleconomy::common to find only the records for the most common models.
+```{r}
+vehicles %>%
+  semi_join(common, by = "model")
+```
+
+4. Find the 48 hours (over the course of the whole year) that have the worst delays. Cross-reference it with the weather data. Can you see any patterns?
+
+I did it per day instead of the 48 hours
+```{r}
+worstdays <- flights %>%
+  group_by(year, month, day) %>%
+  summarise(delay = mean(dep_delay, na.rm = TRUE)) %>%
+  arrange(desc(delay)) %>%
+  head()
+
+weather %>%
+  semi_join(worstdays, by = c("year", "month", "day"))
+```
+Preety high humidity and windspeeds
+
+5. What does anti_join(flights, airports, by = c("dest" = "faa")) tell you? What does anti_join(airports, flights, by = c("faa" = "dest")) tell you?
+```{r}
+anti_join(flights, airports, by = c("dest" = "faa"))
+anti_join(airports, flights, by = c("faa" = "dest"))
+```
+
+First one: which flights did not go to an airport in airports?
+Second one: which airports were never flown to?
+
+6. You might expect that there’s an implicit relationship between plane and airline, because each plane is flown by a single airline. Confirm or reject this hypothesis using the tools you’ve learned above.
+```{r}
+flights %>%
+  group_by(tailnum, carrier) %>%
+  count() %>%
+  filter(n() > 1) %>%
+  select(tailnum) %>%
+  distinct()
+```
+

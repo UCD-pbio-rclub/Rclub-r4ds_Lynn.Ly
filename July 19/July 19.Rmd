@@ -1,0 +1,157 @@
+---
+title: "July 19"
+output: html_document
+---
+
+Finish chapter 14 and embedded exercises
+
+```{r}
+library(tidyverse)
+library(stringr)
+```
+
+To determine if a character vector matches a pattern, use `str_detect()`
+A common use of str_subset() is to select the elements that match the pattern. 
+
+For each of the following challenges, try solving it by using both a single regular expression, and a combination of multiple str_detect() calls.
+
+Find all words that start or end with x.
+
+```{r}
+str_subset(words, "(^x)|(x$)")
+```
+
+
+Find all words that start with a vowel and end with a consonant.
+
+```{r}
+str_subset(words, "^[aeiou].*[^aeiou]$")
+```
+
+Are there any words that contain at least one of each different vowel?
+```{r}
+str_subset(words, "a") %>% str_subset("e") %>% str_subset("i") %>% str_subset("o") %>% str_subset("u")
+```
+
+What word has the highest number of vowels? What word has the highest proportion of vowels? (Hint: what is the denominator?)
+
+```{r}
+df <- tibble(
+  word = words, 
+)
+df <- df %>%
+  mutate(
+    vowels = str_count(word, "[aeiou]"),
+    consonants = str_count(word, "[^aeiou]"),
+    proportion = vowels / consonants
+  ) 
+
+arrange(df, desc(vowels)) %>% head()
+arrange(df, desc(proportion)) %>% head()
+```
+
+14.4.4.1 Exercises
+
+1. Find all words that come after a “number” like “one”, “two”, “three” etc. Pull out both the number and the word.
+```{r}
+number <- "(one|two|three|four) ([^ ]+)"
+has_number <- sentences %>% str_subset(number)
+
+has_number %>% str_match(number)
+```
+
+Find all contractions. Separate out the pieces before and after the apostrophe.
+
+```{r}
+contraction <- "([^ ]+)\'([^ ]+)"
+sentences %>% str_subset(contraction) %>% str_match(contraction)
+```
+
+14.4.5 Replacing Matches
+
+Replace all forward slashes in a string with backslashes. 
+## I can't figure this out. 
+
+```{r}
+
+hello <- "hello//"
+
+hello %>% str_replace_all("/", "\\\\")
+```
+
+Implement a simple version of str_to_lower() using replace_all().
+## This one either. Maybe by subtracting from uppercase to get to the lowercase version
+
+```{r}
+str_replace(sentences, "(A-Z)",tolower(("\\1"))) %>% head()
+```
+
+
+Switch the first and last letters in words. Which of those strings are still words?
+```{r}
+switched <- words %>% str_replace("(^.)(.*)(.$)", "\\3\\2\\1")
+switchedcol <- str_c("^", switched, "$",collapse = "|")
+
+words %>% str_subset(switchedcol)
+
+```
+
+14.4.6.1 Exercises
+
+Split up a string like "apples, pears, and bananas" into individual components.
+```{r}
+fruits <- "apples, pears, and bananas"
+fruits %>% str_split("(, and )|(, )")
+```
+
+Why is it better to split up by boundary("word") than " "?
+```{r}
+gruits <- "I like to eat apples, pears, and bananas!"
+gruits %>% str_split(" ")
+gruits %>% str_split(boundary("word"))
+```
+Using boundary("word") will not capture the punctuation that is attached to words
+
+
+What does splitting with an empty string ("") do? Experiment, and then read the documentation.
+```{r}
+gruits %>% str_split("")
+```
+
+It splits into every single character. It is equivalent to splitting for boundary("character")
+
+14.5.1 Exercises
+
+How would you find all strings containing \ with regex() vs. with fixed()? 
+#? Still don't understand fixed()
+```{r}
+str_subset(c("a\\b", "ab"), regex("\\\\"))
+str_subset(c("a\\b", "ab"), fixed("\\"))
+```
+
+
+What are the five most common words in sentences?
+```{r}
+sentences %>% str_extract_all(boundary("word", ignore_case=TRUE)) %>%
+  unlist() %>% #Because it gives many lists of lists 
+  str_to_lower() %>%
+  tibble() %>%
+  set_names("word") %>%
+  group_by(word) %>%
+  count(sort= TRUE) %>%
+  head(5)
+```
+
+
+Find the stringi functions that:
+
+```{r}
+apropos("stri")
+apropos("duplicate")
+apropos("stri_rand")
+```
+
+Count the number of words. `stri_count()`
+Find duplicated strings. `stri_duplicated()`
+Generate random text. "stri_rand_lipsum"  "stri_rand_shuffle" "stri_rand_strings"
+How do you control the language that stri_sort() uses for sorting? use locale=

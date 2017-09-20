@@ -1,0 +1,159 @@
+---
+title: "August 16"
+output: html_document
+---
+
+```{r}
+rescale01 <- function(x) {
+  rng <- range(x, na.rm = TRUE)
+  (x - rng[1]) / (rng[2] - rng[1])
+}
+rescale01(c(0, 5, 10))
+
+rescale01 <- function(x) {
+  rng <- range(x, na.rm = TRUE, finite = TRUE)
+  (x - rng[1]) / (rng[2] - rng[1])
+}
+rescale01(x)
+```
+
+In the second variant of rescale01(), infinite values are left unchanged. Rewrite rescale01() so that -Inf is mapped to 0, and Inf is mapped to 1.
+
+```{r}
+rescale01 <- function(x) {
+  rng <- range(x, na.rm = TRUE, finite = TRUE)
+  y <- (x - rng[1]) / (rng[2] - rng[1])
+  y[y == Inf] <- 1
+  y[y == -Inf] <- 0
+  y
+}
+rescale01(c(Inf, 1, 2, 3))
+```
+
+
+Practice turning the following code snippets into functions. Think about what each function does. What would you call it? How many arguments does it need? Can you rewrite it to be more expressive or less duplicative?
+
+
+```{r}
+naProportion <- function(x) {
+  mean(is.na(x))
+}
+
+xProportion <- function(x) {
+  x / sum(x, na.rm=TRUE)
+}
+
+coef_variation <- function(x) {
+  sd(x, na.rm = TRUE) / mean(x, na.rm = TRUE)
+}
+```
+
+Follow http://nicercode.github.io/intro/writing-functions.html to write your own functions to compute the variance and skew of a numeric vector.
+
+Write both_na(), a function that takes two vectors of the same length and returns the number of positions that have an NA in both vectors.
+
+```{r}
+both_na <- function(x, y) {
+  sum(is.na(x) & is.na(y))
+}
+
+both_na(c(NA, 0, NA), c(NA, 1, 1))
+
+```
+
+What do the following functions do? Why are they useful even though they are so short?
+
+```{r}
+is_directory <- function(x) file.info(x)$isdir
+is_readable <- function(x) file.access(x, 4) == 0
+```
+
+The names make it clearer what the function is doing
+
+# 19.4.4 Exercises
+
+What’s the difference between if and ifelse()? Carefully read the help and construct three examples that illustrate the key differences.
+
+ifelse has a built in if and else result. It also is vectorized?
+if can be chained with else statements.
+
+Write a greeting function that says “good morning”, “good afternoon”, or “good evening”, depending on the time of day. (Hint: use a time argument that defaults to lubridate::now(). That will make it easier to test your function.)
+```{r}
+greet <- function(time = lubridate::now()) {
+  hr <- hour(time)
+  if (hr < 12) {
+    print("good morning")
+  } else if (hr < 16) {
+    print("good afternoon")
+  } else {
+    print("good evening")
+  }
+} 
+greet()
+```
+
+Implement a fizzbuzz function. It takes a single number as input. If the number is divisible by three, it returns “fizz”. If it’s divisible by five it returns “buzz”. If it’s divisible by three and five, it returns “fizzbuzz”. Otherwise, it returns the number. Make sure you first write working code before you create the function.
+
+```{r}
+fizzbuzz <- function(n) {
+  if (n %% 3 == 0 && n %% 5 == 0) {
+    return("fizzbuzz")
+  } else if (n %% 3 == 0) {
+    return("fizz")
+  } else if (n %% 5 == 0) {
+    return("buzz") 
+  } else {
+    return(n)
+  }
+}
+
+fizzbuzz(2)
+fizzbuzz(15)
+fizzbuzz(9)
+```
+
+How could you use cut() to simplify this set of nested if-else statements?
+
+```{r}
+if (temp <= 0) {
+  "freezing"
+} else if (temp <= 10) {
+  "cold"
+} else if (temp <= 20) {
+  "cool"
+} else if (temp <= 30) {
+  "warm"
+} else {
+  "hot"
+}
+
+temp <-  function(x) {
+  cut(x, c(-Inf, 0, 10, 20, 30, Inf), labels = c("freezing", "cold", "cool", "warm", "hot"))
+}
+
+temp(0)
+```
+
+How would you change the call to cut() if I’d used < instead of <=? What is the other chief advantage of cut() for this problem? (Hint: what happens if you have many values in temp?)
+
+use the argument right=FALSE to do < instead of <=
+
+What happens if you use switch() with numeric values?
+
+```{r}
+switch(3, "one", "two", "three")
+```
+
+
+What does this switch() call do? What happens if x is “e”?
+```{r}
+x <- "a"
+switch(x, 
+  a = ,
+  b = "ab",
+  c = ,
+  d = "cd"
+)
+```
+
+If x is e, nothing is returned. If a or b, ab

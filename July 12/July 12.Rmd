@@ -1,0 +1,71 @@
+---
+title: "July 12"
+output: html_document
+---
+
+```{r}
+library(tidyverse)
+library(stringr)
+```
+
+14.2.5 Exercises
+
+1. In code that doesn’t use stringr, you’ll often see paste() and paste0(). What’s the difference between the two functions? What stringr function are they equivalent to? How do the functions differ in their handling of NA?
+
+paste0 defaults sep = ""
+str_c() with NA will result in NA
+paste with NA will translate NA into the characters NA
+
+2. In your own words, describe the difference between the sep and collapse arguments to str_c().
+
+```{r}
+str_c(c("x", "y", "z"), "a", collapse = ",")
+str_c(c("x", "y", "z"), "a", sep = ",")
+```
+sep puts things between the arguments of str_c. Collapse puts things between something inside a single argument
+
+3. Use str_length() and str_sub() to extract the middle character from a string. What will you do if the string has an even number of characters?
+
+```{r}
+x <- "evEn"
+y <- "odD"
+str_sub(x, str_length(x)/2, str_length(x)/2)
+str_sub(y, ceiling(str_length(y)/2), ceiling(str_length(y)/2))
+```
+
+4. What does str_wrap() do? When might you want to use it?
+Makes text wrap to a specified width. Useful when you have a long string that stretches beyond the page
+
+5. What does str_trim() do? What’s the opposite of str_trim()?
+str_trim() removes spaces from one or both of the ends of a string.
+str_pad() adds spaces to one or both ends to fit a specified length
+
+6. Write a function that turns (e.g.) a vector c("a", "b", "c") into the string a, b, and c. Think carefully about what it should do if given a vector of length 0, 1, or 2.
+```{r}
+VtoS <- function(vect){
+  if(length(vect) > 1) {
+    str_c(str_c(vect[-length(vect)], collapse = ","), ", and ", vect[length(vect)])
+  }
+  else {return(vect)}
+}
+```
+
+14.3.5 
+
+1. Describe, in words, what these expressions will match:
+
+`(.)\1\1` 3 of the same character in a row
+`(.)(.)\\2\\1` OPPO structure
+`(..)\1` ANAN structure
+`(.).\\1.\\1` AoApAq structure
+`(.)(.)(.).*\\3\\2\\1` SHA ***** ASH
+
+Start and end with the same character.
+^(.).*\\1$
+
+Contain a repeated pair of letters (e.g. “church” contains “ch” repeated twice.)
+(..).*\1
+
+Contain one letter repeated in at least three places (e.g. “eleven” contains three “e”s.)
+(.).*\1.*\1
+
