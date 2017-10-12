@@ -1,0 +1,164 @@
+---
+title: "September 6"
+output: html_document
+---
+
+Sep 6: 21.1 - 21.4
+
+```{r}
+library(tidyverse)
+library(nycflights13)
+library(stringr)
+```
+
+# 21.2.1 Exercises
+
+1. Write for loops to:
+
+Compute the mean of every column in mtcars.
+```{r}
+output <- vector("double", ncol(mtcars))
+for (i in seq_along(mtcars)) {        
+  output[[i]] <- mean(mtcars[[i]])
+}
+output
+```
+
+Determine the type of each column in nycflights13::flights.
+```{r}
+output <- vector("list", ncol(nycflights13::flights))
+for (i in seq_along(flights)) {        
+  output[[i]] <- class(flights[[i]])
+}
+output
+```
+
+Compute the number of unique values in each column of iris.
+```{r}
+output <- vector("integer", ncol(iris))
+names(output) <- names(iris)
+for (i in seq_along(iris)) {        
+  output[[i]] <- length(unique(iris[[i]]))
+}
+output
+```
+
+Eliminate the for loop in each of the following examples by taking advantage of an existing function that works with vectors:
+```{r}
+out <- ""
+for (x in letters) {
+  out <- stringr::str_c(out, x)
+}
+
+stringr::str_c(letters, collapse = "")
+
+x <- sample(100)
+sd <- 0
+for (i in seq_along(x)) {
+  sd <- sd + (x[i] - mean(x)) ^ 2
+}
+sd <- sqrt(sd / (length(x) - 1))
+
+sd(x)
+
+x <- runif(100)
+out <- vector("numeric", length(x))
+out[1] <- x[1]
+for (i in 2:length(x)) {
+  out[i] <- out[i - 1] + x[i]
+}
+```
+
+Combine your function writing and for loop skills:
+
+Write a for loop that prints() the lyrics to the children’s song “Alice the camel”.
+```{r}
+for(i in 5:0) {
+  if(i != 1) {
+    print(str_c("Alice the camel has ", i, " humps."))
+  } else {
+    print("Alice the camel has 1 hump.")
+  }
+  if( i !=0) {
+    print("So go, Alice, go.")
+  } else {
+    print("Now Alice is a horse.")
+  }
+}
+```
+
+# 21.3.5 Exercises
+
+1. Imagine you have a directory full of CSV files that you want to read in. You have their paths in a vector, files <- dir("data/", pattern = "\\.csv$", full.names = TRUE), and now want to read each one with read_csv(). Write the for loop that will load them into a single data frame.
+```{r}
+output <- vector("list", length(files))
+for(i in seq_along(files)) {
+  output[[i]] <- read_csv(files[[i]])
+}
+output <- bind_rows(output)
+```
+
+2. What happens if you use for (nm in names(x)) and x has no names? What if only some of the elements are named? What if the names are not unique?
+```{r}
+x <- 1:3
+print(names(x))
+
+for (nm in names(x)) {
+  print(nm)
+  print(x[[nm]])
+}
+```
+
+If no names, the loop doesn't run. 
+If an element is unnamed, the name is actually ""
+For duplicate names, it will return only the first element
+
+
+Write a function that prints the mean of each numeric column in a data frame, along with its name. For example, show_mean(iris) would print:
+
+```{r}
+show_mean <- function(df) {
+  for(i in names(df)) {
+    if(is.numeric(df[[i]])) {
+      cat(str_c(i, ": ", mean(df[[i]]), "\n"))
+    }
+  }
+}
+
+show_mean(iris)
+```
+
+What does this code do? How does it work?
+```{r}
+trans <- list( 
+  disp = function(x) x * 0.0163871,
+  am = function(x) {
+    factor(x, labels = c("auto", "manual"))
+  }
+)
+for (var in names(trans)) {
+  mtcars[[var]] <- trans[[var]](mtcars[[var]])
+}
+```
+
+It changes the $disp and $am columns. It multiplies disp by 0.016 and factorizes am to auto or manual 
+
+
+# 21.4.1 Exercises
+
+Read the documentation for apply(). In the 2d case, what two for loops does it generalise?
+It applies to rows or columns
+
+Adapt col_summary() so that it only applies to numeric columns You might want to start with an is_numeric() function that returns a logical vector that has a TRUE corresponding to each numeric column.
+```{r}
+col_summary <- function(df, fun) {
+  out <- vector("double", length(df))
+  for (i in seq_along(df)) {
+    if(is.numeric(df[[i]])) {
+      out[i] <- fun(df[[i]])
+    }
+  }
+  out
+}
+```
+

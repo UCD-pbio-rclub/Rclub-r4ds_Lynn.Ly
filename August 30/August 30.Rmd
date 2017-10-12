@@ -1,0 +1,91 @@
+---
+title: "August 30"
+output: html_document
+---
+
+Aug 30: rest of Chapter 20
+
+20.4.5 Subsetting
+
+[] is the subsetting function for vectors and is called like x[a]
+
+[[ only ever extracts a single element, and always drops names. It’s a good idea to use it whenever you want to make it clear that you’re extracting a single item, as in a for loop. 
+
+20.4.6 Exercises
+
+1. What does mean(is.na(x)) tell you about a vector x? What about sum(!is.finite(x))?
+mean(is.na(x)) tells you what proportion of NAs there are in x. 
+sum(!is.infinite(x)) tells you how many objects there are that are not -Inf or Inf
+
+2. Carefully read the documentation of is.vector(). What does it actually test for? Why does is.atomic() not agree with the definition of atomic vectors above?
+is.vector() checks if x has any attributes besides name. Maybe to check for more complex things?
+is.atomic checks if x is one of the 6 atomic types, but it's ok to have other attributes
+
+3. Compare and contrast setNames() with purrr::set_names().
+purrr::set_names has additional checks to make sure input is valid, like must be a vector and must be same length
+
+4. Create functions that take a vector as input and returns:
+The last value. Should you use [ or [[?
+```{r}
+x[[length(x)]]
+```
+The elements at even numbered positions.
+```{r}
+x[0:(length(x) - 1) %% 2 == 0]
+```
+
+Every element except the last value.
+```{r}
+x[-length(x)]
+```
+
+Only even numbers (and no missing values).
+```{r}
+x[!is.na(x) && x %% 2 == 0]
+```
+
+
+5. Why is x[-which(x > 0)] not the same as x[x <= 0]?
+edge case: NA. which(NA > 0) is false, so opposite of that is true.
+But x <= NA is still false.
+
+6. What happens when you subset with a positive integer that’s bigger than the length of the vector? What happens when you subset with a name that doesn’t exist?
+```{r}
+x <- 0:5
+x[9]
+x[["cool"]]
+```
+# 20.5 Recursive vectors (lists)
+
+Subsetting a list
+
+[] extracts a sublist. The result will always be a list
+[[]] extracts a single component and removes one level of hierarchy from the list
+$ extracts named elements of the list. Equivalent to [[""]]
+
+What happens if you subset a tibble as if you’re subsetting a list? What are the key differences between a list and a tibble?
+# borrowed answer
+Subsetting a tibble works the same way as a list; a data frame can be thought of as a list of columns. The key different between a list and a tibble is that a tibble (data frame) has the restriction that all its elements (columns) must have the same length.
+
+# 20.7.4 Exercises
+
+1. What does hms::hms(3600) return? How does it print? What primitive type is the augmented vector built on top of? What attributes does it use?
+```{r}
+x <- hms::hms(3600)
+typeof(x)
+attributes(x)
+class(x)
+```
+
+
+2. Try and make a tibble that has columns with different lengths. What happens?
+
+```{r}
+tibble(1:5, 1)
+tibble(1:5, 1:3)
+```
+
+It works if the larger column is a multiple of the smaller one
+
+3. Based on the definition above, is it ok to have a list as a column of a tibble?
+I think so

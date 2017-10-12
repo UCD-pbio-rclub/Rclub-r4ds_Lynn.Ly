@@ -3,3 +3,63 @@ title: "August 22"
 output: html_document
 ---
 
+```{r}
+library(tidyverse)
+```
+
+
+19.5.5 Exercises
+
+1. What does commas(letters, collapse = "-") do? Why? 
+It doesn't work; it thinks we are putting collapse in as an actual argument as well as a "formal argument"
+```{r}
+commas <- function(...) stringr::str_c(..., collapse = ", ")
+commas(letters, collapse = "-")
+commas(letters[1:10])
+```
+
+
+It’d be nice if you could supply multiple characters to the pad argument, e.g. rule("Title", pad = "-+"). Why doesn’t this currently work? How could you fix it?
+
+Our function assumes that pad has a length of 1. We can try to fix it by taking the length of pad into account
+
+```{r}
+rule <- function(..., pad = "-+~") {
+  title <- paste0(...)
+  width <- getOption("width") - nchar(title) - 5 
+  cat(title, " ", stringr::str_dup(pad, width/nchar(pad)), "\n", sep = "")
+}
+rule("Important output")
+```
+
+What does the trim argument to mean() do? When might you use it?
+
+It is a fraction of observations to be trimmed from each side of x before the mean is computed. You can use it if you have a lot of outliers on each side
+
+The default value for the method argument to cor() is c("pearson", "kendall", "spearman"). What does that mean? What value is used by default?
+They are different types of coefs. Default is pearson
+
+
+# 20.3.5 Exercises
+
+1. Describe the difference between is.finite(x) and !is.infinite(x).
+is.finite considers any number that is not Inf to be finite. is.finite will consider NA to be not finite.
+is.infinite considers only Inf and -Inf to be infinite. But then, !is.infinite will consider NA to not be infinite.
+
+2. Read the source code for dplyr::near() (Hint: to see the source code, drop the ()). How does it work?
+```{r}
+dplyr::near
+```
+
+It allows a tolerance level for how different the numbers can be
+
+3. A logical vector can take 3 possible values. How many possible values can an integer vector take? How many possible values can a double take? Use google to do some research.
+
+?Not infinite?
+
+4. Brainstorm at least four functions that allow you to convert a double to an integer. How do they differ? Be precise.
+
+
+
+5. What functions from the readr package allow you to turn a string into logical, integer, and double vector?
+parse_logical, parse_integer, and parse_number
