@@ -1,0 +1,199 @@
+---
+title: "November 8"
+output: 
+  html_document: 
+    keep_md: yes
+---
+
+Chaper 25: Many Models 
+
+```{r, include = FALSE}
+library(modelr)
+library(tidyverse)
+library(gapminder)
+```
+
+
+How does life expectancy change over time for each country? 
+
+```{r}
+gapminder %>% 
+  ggplot(aes(year, lifeExp, group = country)) +
+    geom_line(alpha = 1/3)
+```
+
+there’s a strong signal (overall linear growth) that makes it hard to see subtler trends. We’ll tease these factors apart by fitting a model with a linear trend. The model captures steady growth over time, and the residuals will show what’s left.
+
+```{r}
+nz <- filter(gapminder, country == "New Zealand")
+nz %>% 
+  ggplot(aes(year, lifeExp)) + 
+  geom_line() + 
+  ggtitle("Full data = ")
+
+nz_mod <- lm(lifeExp ~ year, data = nz)
+nz %>% 
+  add_predictions(nz_mod) %>%
+  ggplot(aes(year, pred)) + 
+  geom_line() + 
+  ggtitle("Linear trend + ")
+
+nz %>% 
+  add_residuals(nz_mod) %>% 
+  ggplot(aes(year, resid)) + 
+  geom_hline(yintercept = 0, colour = "white", size = 3) + 
+  geom_line() + 
+  ggtitle("Remaining pattern")
+```
+
+## 25.2.1 Nested Data
+
+```{r}
+by_country <- gapminder %>% 
+  group_by(country, continent) %>% 
+  nest()
+
+by_country
+```
+
+in a grouped data frame, each row is an observation; in a nested data frame, each row is a group. Another way to think about a nested dataset is we now have a meta-observation: a row that represents the complete time course for a country, rather than a single point in time.
+
+## 25.2.2 List-columns
+
+```{r}
+country_model <- function(df) {
+  lm(lifeExp ~ year, data = df)
+}
+
+# The data frames are in a list, so we can use purrr:map()
+models <- map(by_country$data, country_model)
+
+by_country <- by_country %>% 
+  mutate(model = map(data, country_model))
+by_country
+```
+
+## 25.2.3 Unnesting
+
+Add residuals to each data / model pair. We have 142 data frames and 142 models
+```{r}
+by_country <- by_country %>% 
+  mutate(
+    resids = map2(data, model, add_residuals)
+  )
+by_country
+
+resids <- unnest(by_country, resids)
+resids
+
+resids %>% 
+  ggplot(aes(year, resid)) +
+    geom_line(aes(group = country), alpha = 1 / 3) + 
+    geom_smooth(se = FALSE)
+
+resids %>% 
+  ggplot(aes(year, resid, group = country)) +
+    geom_line(alpha = 1 / 3) + 
+    facet_wrap(~continent)
+```
+## 25.2.4 Model Quality
+
+Residuals are one way to evaluate model quality. 
+the broom package also provides functions to turn models into tidy data
+broom::glance extracts model quality metrics 
+
+```{r}
+broom::glance(nz_mod)
+```
+
+
+```{r}
+glance <- by_country %>% 
+  mutate(glance = map(model, broom::glance)) %>% 
+  unnest(glance, .drop = TRUE)
+glance
+```
+
+Use this data to find models that don't fit well. For example, sort by r.squared or plot things
+
+```{r}
+glance %>% 
+  ggplot(aes(continent, r.squared)) + 
+    geom_jitter(width = 0.5)
+```
+
+```{r}
+bad_fit <- filter(glance, r.squared < 0.25)
+
+gapminder %>% 
+  semi_join(bad_fit, by = "country") %>% 
+  ggplot(aes(year, lifeExp, colour = country)) +
+    geom_line()
+```
+
+
+# 25.2.5 Exercises
+1. A linear trend seems to be slightly too simple for the overall trend. Can you do better with a quadratic polynomial? How can you interpret the coefficients of the quadratic? *Where can you find this?* (Hint you might want to transform year so that it has mean zero.) 
+*WHY?*
+
+```{r}
+country_model <- function(df) {
+  lm(lifeExp ~ poly(year, 2), data = df)
+}
+
+by_country <- gapminder %>% 
+  group_by(country, continent) %>% 
+  nest()
+
+by_country <- by_country %>%
+  mutate(model = map(data, country_model))
+
+by_country <- by_country %>% 
+  mutate(
+    resids = map2(data, model, add_residuals)
+  )
+by_country
+
+unnest(by_country, resids) %>%
+ggplot(aes(year, resid)) +
+  geom_line(aes(group = country), alpha = 1 / 3) + 
+  geom_smooth(se = FALSE)
+
+by_country %>% 
+  mutate(glance = map(model, broom::glance)) %>%
+  unnest(glance, .drop = TRUE) %>%
+  ggplot(aes(continent, r.squared)) +
+  geom_jitter(width = 0.5)
+```
+
+
+2. Explore other methods for visualising the distribution of R2  per continent. You might want to try the ggbeeswarm package, which provides similar methods for avoiding overlaps as jitter, but uses deterministic methods.
+
+```{r}
+library("ggbeeswarm")
+by_country %>% 
+  mutate(glance = map(model, broom::glance)) %>%
+  unnest(glance, .drop = TRUE) %>%
+  ggplot(aes(continent, r.squared)) +
+  geom_beeswarm()
+```
+
+
+3. To create the last plot (showing the data for the countries with the worst model fits), we needed two steps: we created a data frame with one row per country and then semi-joined it to the original dataset. It’s possible avoid this join if we use unnest() instead of unnest(.drop = TRUE). How?
+
+```{r}
+glance2 <- by_country %>% 
+  mutate(glance =map(model, broom::glance)) %>%
+  unnest(glance)
+
+bad_fit <- filter(glance2, r.squared < 0.25)
+
+bad_fit %>% 
+  unnest(data) %>% 
+  ggplot(aes(year, lifeExp, color = country)) +
+  geom_line()
+```
+
+
+# List - columns
+
